@@ -68,17 +68,32 @@
 
         // Fungsi Simpan
         window.saveToFirebase = async () => {
-            const name = document.getElementById('projName').value;
-            const link = document.getElementById('projLink').value;
-            const type = document.getElementById('projType').value;
+    const name = document.getElementById('projName').value;
+    const link = document.getElementById('projLink').value;
+    const type = document.getElementById('projType').value;
 
-            if (name && link) {
-                await addDoc(colRef, { name, link, type, createdAt: Date.now() });
-                document.getElementById('projName').value = '';
-                document.getElementById('projLink').value = '';
-                toggleAdmin();
-            }
-        };
+    if (name && link) {
+        console.log("Mencoba menyimpan data..."); // Cek di console
+        try {
+            const docRef = await addDoc(colRef, { 
+                name, 
+                link: link.startsWith('http') ? link : 'https://' + link, 
+                type, 
+                createdAt: Date.now() 
+            });
+            console.log("Berhasil disimpan dengan ID: ", docRef.id);
+            alert("Berhasil disimpan, Sayang!"); // Notifikasi sukses
+            document.getElementById('projName').value = '';
+            document.getElementById('projLink').value = '';
+            window.toggleAdmin();
+        } catch (e) {
+            console.error("Error detail: ", e);
+            alert("Gagal simpan nih: " + e.message);
+        }
+    } else {
+        alert("Isi nama dan link dulu ya sayang!");
+    }
+};
 
         // Fungsi Hapus
         window.deleteProject = async (id) => {
