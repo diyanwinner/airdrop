@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airdrop Pro | Firebase Sync</title>
+    <title>Airdrop Pro | Edit Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -18,16 +18,17 @@
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-white tracking-tight">Airdrop <span class="text-sky-500 text-shadow-glow">Cloud</span></h1>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">Airdrop <span class="text-sky-500">Cloud</span></h1>
                 <p id="statusSync" class="text-slate-500 text-xs italic">● Menghubungkan...</p>
             </div>
-            <button onclick="toggleAdmin()" class="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-full text-sm font-bold shadow-lg shadow-sky-900/20 transition">
+            <button onclick="openAddMode()" class="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-full text-sm font-bold shadow-lg transition">
                 + Tambah Project Baru
             </button>
         </div>
 
         <div id="adminForm" class="hidden mb-10 glass-card p-6 rounded-3xl border-2 border-dashed border-sky-500/20">
-            <h2 class="text-lg font-bold mb-4 text-sky-400">Project Details</h2>
+            <h2 id="formTitle" class="text-lg font-bold mb-4 text-sky-400">Project Details</h2>
+            <input type="hidden" id="editId">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <input type="text" id="projName" placeholder="Nama Project" class="input-field outline-none focus:border-sky-500">
                 <input type="text" id="projLink" placeholder="Link Utama (Website)" class="input-field outline-none focus:border-sky-500">
@@ -37,7 +38,7 @@
                     <option value="daily">Airdrop Daily</option>
                     <option value="testnet">Testnet Daily</option>
                 </select>
-                <button onclick="saveToFirebase()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl transition">Simpan ke Cloud</button>
+                <button id="btnSave" onclick="saveToFirebase()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl transition">Simpan ke Cloud</button>
             </div>
         </div>
 
@@ -46,21 +47,20 @@
                 <h2 class="text-xl font-bold text-cyan-400 mb-6 flex items-center">
                     <span class="w-2 h-6 bg-cyan-500 rounded-full mr-3"></span> AIRDROP DAILY
                 </h2>
-                <div id="dailyContainer" class="space-y-4 text-slate-500 italic">Memuat data...</div>
+                <div id="dailyContainer" class="space-y-4">Memuat data...</div>
             </div>
-
             <div>
                 <h2 class="text-xl font-bold text-indigo-400 mb-6 flex items-center">
                     <span class="w-2 h-6 bg-indigo-500 rounded-full mr-3"></span> TESTNET DAILY
                 </h2>
-                <div id="testnetContainer" class="space-y-4 text-slate-500 italic">Memuat data...</div>
+                <div id="testnetContainer" class="space-y-4">Memuat data...</div>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCI4p5ScfdKBwNeAABj8N-G24sT1sIn1g4",
@@ -76,29 +76,47 @@
         const db = getFirestore(app);
         const colRef = collection(db, "airdrops");
 
-        window.toggleAdmin = () => document.getElementById('adminForm').classList.toggle('hidden');
+        window.openAddMode = () => {
+            document.getElementById('formTitle').innerText = "Tambah Project Baru";
+            document.getElementById('editId').value = '';
+            ["projName", "projLink", "projDC", "projGalxe"].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('adminForm').classList.remove('hidden');
+        };
+
+        window.openEditMode = (id, name, link, dc, galxe, type) => {
+            document.getElementById('formTitle').innerText = "Edit Project: " + name;
+            document.getElementById('editId').value = id;
+            document.getElementById('projName').value = name;
+            document.getElementById('projLink').value = link;
+            document.getElementById('projDC').value = dc || '';
+            document.getElementById('projGalxe').value = galxe || '';
+            document.getElementById('projType').value = type;
+            document.getElementById('adminForm').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
 
         window.saveToFirebase = async () => {
-            const name = document.getElementById('projName').value;
-            const link = document.getElementById('projLink').value;
-            const dc = document.getElementById('projDC').value;
-            const galxe = document.getElementById('projGalxe').value;
-            const type = document.getElementById('projType').value;
+            const id = document.getElementById('editId').value;
+            const data = {
+                name: document.getElementById('projName').value,
+                link: document.getElementById('projLink').value,
+                dc: document.getElementById('projDC').value,
+                galxe: document.getElementById('projGalxe').value,
+                type: document.getElementById('projType').value,
+                updatedAt: Date.now()
+            };
 
-            if (name && link) {
+            if (data.name && data.link) {
                 try {
-                    await addDoc(colRef, { 
-                        name, 
-                        link: link.startsWith('http') ? link : 'https://' + link,
-                        dc: dc ? (dc.startsWith('http') ? dc : 'https://' + dc) : '',
-                        galxe: galxe ? (galxe.startsWith('http') ? galxe : 'https://' + galxe) : '',
-                        type, 
-                        createdAt: Date.now() 
-                    });
-                    ["projName", "projLink", "projDC", "projGalxe"].forEach(id => document.getElementById(id).value = '');
-                    window.toggleAdmin();
+                    if (id) {
+                        await updateDoc(doc(db, "airdrops", id), data);
+                    } else {
+                        data.createdAt = Date.now();
+                        await addDoc(colRef, data);
+                    }
+                    document.getElementById('adminForm').classList.add('hidden');
                 } catch (e) { alert("Error: " + e.message); }
-            } else { alert("Minimal isi Nama dan Link Utama ya!"); }
+            }
         };
 
         window.deleteProject = async (id) => {
@@ -110,21 +128,25 @@
             const testnetCont = document.getElementById('testnetContainer');
             dailyCont.innerHTML = ''; testnetCont.innerHTML = '';
 
-            snapshot.docs.forEach(doc => {
-                const p = doc.data();
+            snapshot.docs.forEach(docSnap => {
+                const p = docSnap.data();
+                const id = docSnap.id;
                 const card = `
-                    <div class="glass-card p-5 rounded-2xl border border-slate-800 hover:border-sky-500/50 transition group shadow-lg">
+                    <div class="glass-card p-5 rounded-2xl border border-slate-800 hover:border-sky-500/50 transition group shadow-lg relative">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center space-x-3">
-                                <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-sky-500 focus:ring-sky-500">
+                                <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-sky-500">
                                 <h3 class="font-bold text-white text-lg">${p.name}</h3>
                             </div>
-                            <button onclick="deleteProject('${doc.id}')" class="opacity-0 group-hover:opacity-100 text-slate-600 hover:text-rose-500 transition">✕</button>
+                            <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="openEditMode('${id}', '${p.name}', '${p.link}', '${p.dc}', '${p.galxe}', '${p.type}')" class="text-slate-400 hover:text-sky-400">✏️</button>
+                                <button onclick="deleteProject('${id}')" class="text-slate-400 hover:text-rose-500">✕</button>
+                            </div>
                         </div>
                         <div class="flex flex-wrap gap-2">
-                            <a href="${p.link}" target="_blank" class="btn-link bg-sky-900/40 text-sky-400 hover:bg-sky-500 hover:text-white border border-sky-500/30">🌐 Web</a>
-                            ${p.dc ? `<a href="${p.dc}" target="_blank" class="btn-link bg-indigo-900/40 text-indigo-400 hover:bg-indigo-500 hover:text-white border border-indigo-500/30">👾 Discord</a>` : ''}
-                            ${p.galxe ? `<a href="${p.galxe}" target="_blank" class="btn-link bg-purple-900/40 text-purple-400 hover:bg-purple-500 hover:text-white border border-purple-500/30">🌌 Galxe</a>` : ''}
+                            <a href="${p.link}" target="_blank" class="btn-link bg-sky-900/40 text-sky-400 border border-sky-500/30 hover:bg-sky-500 hover:text-white">🌐 Web</a>
+                            ${p.dc ? `<a href="${p.dc}" target="_blank" class="btn-link bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500 hover:text-white">👾 Discord</a>` : ''}
+                            ${p.galxe ? `<a href="${p.galxe}" target="_blank" class="btn-link bg-purple-900/40 text-purple-400 border border-purple-500/30 hover:bg-purple-500 hover:text-white">🌌 Galxe</a>` : ''}
                         </div>
                     </div>
                 `;
