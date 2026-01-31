@@ -49,64 +49,64 @@
     </div>
 
     <script type="module">
+        // Import SDK versi 10.7.1 yang lebih stabil
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. PASTE CONFIG KAMU DI SINI
         const firebaseConfig = {
-            apiKey: "AIzaSy...",
-            authDomain: "project-kamu.firebaseapp.com",
-            projectId: "project-kamu",
-            storageBucket: "project-kamu.appspot.com",
-            messagingSenderId: "123456789",
-            appId: "1:123456789:web:abcdef"
+            apiKey: "AIzaSyCI4p5ScfdKBwNeAABj8N-G24sT1sIn1g4",
+            authDomain: "airdrop-tracker-8e44d.firebaseapp.com",
+            projectId: "airdrop-tracker-8e44d",
+            storageBucket: "airdrop-tracker-8e44d.firebasestorage.app",
+            messagingSenderId: "1007119634981",
+            appId: "1:1007119634981:web:31d5258545ce5cf9fd65cc",
+            measurementId: "G-W802MBMN4J"
         };
 
+        // Inisialisasi
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const colRef = collection(db, "airdrops");
 
+        // Fungsi Global
+        window.toggleAdmin = () => document.getElementById('adminForm').classList.toggle('hidden');
+
         // Fungsi Simpan
         window.saveToFirebase = async () => {
-    const name = document.getElementById('projName').value;
-    const link = document.getElementById('projLink').value;
-    const type = document.getElementById('projType').value;
+            const name = document.getElementById('projName').value;
+            const link = document.getElementById('projLink').value;
+            const type = document.getElementById('projType').value;
 
-    if (name && link) {
-        console.log("Mencoba menyimpan data..."); // Cek di console
-        try {
-            const docRef = await addDoc(colRef, { 
-                name, 
-                link: link.startsWith('http') ? link : 'https://' + link, 
-                type, 
-                createdAt: Date.now() 
-            });
-            console.log("Berhasil disimpan dengan ID: ", docRef.id);
-            alert("Berhasil disimpan, Sayang!"); // Notifikasi sukses
-            document.getElementById('projName').value = '';
-            document.getElementById('projLink').value = '';
-            window.toggleAdmin();
-        } catch (e) {
-            console.error("Error detail: ", e);
-            alert("Gagal simpan nih: " + e.message);
-        }
-    } else {
-        alert("Isi nama dan link dulu ya sayang!");
-    }
-};
+            if (name && link) {
+                try {
+                    console.log("Sedang mengirim data ke Firebase...");
+                    await addDoc(colRef, { 
+                        name: name, 
+                        link: link.startsWith('http') ? link : 'https://' + link, 
+                        type: type, 
+                        createdAt: Date.now() 
+                    });
+                    document.getElementById('projName').value = '';
+                    document.getElementById('projLink').value = '';
+                    window.toggleAdmin();
+                    console.log("Data berhasil masuk!");
+                } catch (e) {
+                    console.error("Error Simpan:", e);
+                    alert("Gagal simpan: " + e.message);
+                }
+            } else {
+                alert("Isi nama dan link dulu ya sayang!");
+            }
+        };
 
-        // Fungsi Hapus
         window.deleteProject = async (id) => {
             if(confirm("Hapus project ini, sayang?")) {
                 await deleteDoc(doc(db, "airdrops", id));
             }
         };
 
-        window.toggleAdmin = () => document.getElementById('adminForm').classList.toggle('hidden');
-
-        // Real-time Listener (Ini yang bikin otomatis sinkron di semua device!)
-        const q = query(colRef, orderBy("createdAt", "desc"));
-        onSnapshot(q, (snapshot) => {
+        // Real-time Sync (Tanpa OrderBy dulu biar ga stuck)
+        onSnapshot(colRef, (snapshot) => {
             const dailyCont = document.getElementById('dailyContainer');
             const testnetCont = document.getElementById('testnetContainer');
             dailyCont.innerHTML = '';
@@ -115,12 +115,12 @@
             snapshot.docs.forEach(doc => {
                 const p = doc.data();
                 const card = `
-                    <div class="glass-card p-4 rounded-xl flex items-center justify-between group border border-slate-800 hover:border-sky-500/50 transition">
+                    <div class="glass-card p-4 rounded-xl flex items-center justify-between group border border-slate-800 hover:border-sky-500/50 transition mb-3">
                         <div class="flex items-center space-x-4">
                             <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-sky-500">
                             <div>
-                                <h3 class="font-bold text-slate-100">${p.name}</h3>
-                                <a href="${p.link}" target="_blank" class="text-xs text-sky-400 hover:underline">Buka Link &rarr;</a>
+                                <h3 class="font-bold text-slate-100">${p.name || 'Tanpa Nama'}</h3>
+                                <a href="${p.link || '#'}" target="_blank" class="text-xs text-sky-400 hover:underline">Link Garapan &rarr;</a>
                             </div>
                         </div>
                         <button onclick="deleteProject('${doc.id}')" class="opacity-0 group-hover:opacity-100 text-rose-500 transition px-2">✕</button>
@@ -129,8 +129,10 @@
                 if (p.type === 'daily') dailyCont.innerHTML += card;
                 else testnetCont.innerHTML += card;
             });
-            
-            document.getElementById('statusSync').innerText = "● Cloud Synced: " + new Date().toLocaleTimeString();
+            document.getElementById('statusSync').innerText = "● Terhubung: " + new Date().toLocaleTimeString();
+        }, (err) => {
+            console.error("Snapshot Error:", err);
+            document.getElementById('statusSync').innerText = "● Error Koneksi!";
         });
     </script>
 </body>
