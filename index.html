@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airdrop Pro | Perfect Sorting</title>
+    <title>Airdrop Pro | Auto-Task Sync</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -20,7 +20,7 @@
     <div class="max-w-[1400px] mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
-                <h1 class="text-2xl font-extrabold text-white">Airdrop <span class="text-sky-500">Dyansg8</span></h1>
+                <h1 class="text-2xl font-extrabold text-white">Airdrop <span class="text-sky-500">Cloud</span></h1>
                 <p id="statusSync" class="text-slate-500 text-[10px] italic">● Menghubungkan...</p>
             </div>
             <button onclick="openAddMode()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition">
@@ -48,8 +48,7 @@
             <button onclick="saveToFirebase()" class="mt-3 w-full bg-sky-600 py-2 rounded-xl text-xs font-bold">Simpan ke Cloud</button>
         </div>
 
-        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            </div>
+        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
     </div>
 
     <script type="module">
@@ -82,12 +81,17 @@
 
         window.openAddMode = () => document.getElementById('adminForm').classList.toggle('hidden');
 
+        // FUNGSI INTI: Checklist otomatis saat link diklik
+        window.handleLinkClick = async (id, isChecked) => {
+            if (!isChecked) {
+                const today = new Date().toLocaleDateString('en-CA');
+                await updateDoc(doc(db, "airdrops", id), { isChecked: true, lastCheckedDate: today });
+            }
+        };
+
         window.toggleCheck = async (id, isChecked) => {
             const today = new Date().toLocaleDateString('en-CA');
-            await updateDoc(doc(db, "airdrops", id), { 
-                isChecked: !isChecked, 
-                lastCheckedDate: !isChecked ? today : null 
-            });
+            await updateDoc(doc(db, "airdrops", id), { isChecked: !isChecked, lastCheckedDate: !isChecked ? today : null });
         };
 
         window.saveToFirebase = async () => {
@@ -126,29 +130,22 @@
             const today = new Date().toLocaleDateString('en-CA');
             container.innerHTML = '';
 
-            // Filter berdasarkan Tab
             let filtered = allData.filter(p => p.type === currentTab);
-
-            // LOGIKA AUTO-RESET & SORTING
-            // Kita proses dulu status isChecked-nya
             let processed = filtered.map(p => {
                 let isChecked = p.isChecked || false;
                 if (isChecked && p.lastCheckedDate !== today) isChecked = false;
                 return { ...p, displayChecked: isChecked };
             });
 
-            // URUTKAN: Belum dicheck (0) naik ke atas, sudah dicheck (1) turun ke bawah
             processed.sort((a, b) => {
-                if (a.displayChecked === b.displayChecked) {
-                    return b.createdAt - a.createdAt; // Sama-sama belum/sudah, urutkan waktu terbaru
-                }
-                return a.displayChecked ? 1 : -1; // b belum dicheck? b naik.
+                if (a.displayChecked === b.displayChecked) return b.createdAt - a.createdAt;
+                return a.displayChecked ? 1 : -1;
             });
 
             processed.forEach(p => {
                 const isChecked = p.displayChecked;
                 container.innerHTML += `
-                    <div class="glass-card p-3 rounded-xl border ${isChecked ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-slate-800'} relative group transition-all duration-500">
+                    <div class="glass-card p-3 rounded-xl border ${isChecked ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-slate-800'} relative group transition-all duration-300">
                         <div class="flex items-center justify-between mb-2">
                             <div class="flex items-center space-x-2 cursor-pointer flex-1" onclick="toggleCheck('${p.id}', ${isChecked})">
                                 <div class="w-4 h-4 rounded border transition flex items-center justify-center ${isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'}">
@@ -162,9 +159,9 @@
                             </div>
                         </div>
                         <div class="flex gap-1 ${isChecked ? 'opacity-40' : ''}">
-                            <a href="${p.link}" target="_blank" class="btn-link bg-sky-900/30 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white">Web</a>
-                            ${p.dc ? `<a href="${p.dc}" target="_blank" class="btn-link bg-indigo-900/30 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white">DC</a>` : ''}
-                            ${p.galxe ? `<a href="${p.galxe}" target="_blank" class="btn-link bg-purple-900/30 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white">GX</a>` : ''}
+                            <a href="${p.link}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-sky-900/30 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white">Web</a>
+                            ${p.dc ? `<a href="${p.dc}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-indigo-900/30 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white">DC</a>` : ''}
+                            ${p.galxe ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-purple-900/30 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white">GX</a>` : ''}
                         </div>
                     </div>
                 `;
