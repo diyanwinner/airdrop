@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airdrop Pro | Edit Mode</title>
+    <title>Airdrop Pro | Auto-Reset Daily</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
@@ -11,6 +11,7 @@
         .glass-card { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.05); }
         .input-field { background: #0f172a; border: 1px solid #1e293b; color: white; border-radius: 0.75rem; padding: 0.5rem 1rem; }
         .btn-link { transition: all 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 0.5rem; padding: 0.25rem 0.75rem; font-size: 0.75rem; font-weight: 600; }
+        .checked-text { text-decoration: line-through; opacity: 0.5; }
     </style>
 </head>
 <body class="p-4 md:p-10">
@@ -18,7 +19,7 @@
     <div class="max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
             <div>
-                <h1 class="text-3xl font-extrabold text-white tracking-tight">Airdrop <span class="text-sky-500">Cloud</span></h1>
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">Airdrop <span class="text-sky-500 text-shadow-glow">Cloud</span></h1>
                 <p id="statusSync" class="text-slate-500 text-xs italic">● Menghubungkan...</p>
             </div>
             <button onclick="openAddMode()" class="px-6 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-full text-sm font-bold shadow-lg transition">
@@ -27,18 +28,18 @@
         </div>
 
         <div id="adminForm" class="hidden mb-10 glass-card p-6 rounded-3xl border-2 border-dashed border-sky-500/20">
-            <h2 id="formTitle" class="text-lg font-bold mb-4 text-sky-400">Project Details</h2>
+            <h2 id="formTitle" class="text-lg font-bold mb-4 text-sky-400 text-center">Project Details</h2>
             <input type="hidden" id="editId">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                 <input type="text" id="projName" placeholder="Nama Project" class="input-field outline-none focus:border-sky-500">
                 <input type="text" id="projLink" placeholder="Link Utama (Website)" class="input-field outline-none focus:border-sky-500">
                 <input type="text" id="projDC" placeholder="Link Discord (Opsional)" class="input-field outline-none focus:border-indigo-500">
                 <input type="text" id="projGalxe" placeholder="Link Galxe (Opsional)" class="input-field outline-none focus:border-purple-500">
-                <select id="projType" class="input-field outline-none">
+                <select id="projType" class="input-field outline-none text-slate-400">
                     <option value="daily">Airdrop Daily</option>
                     <option value="testnet">Testnet Daily</option>
                 </select>
-                <button id="btnSave" onclick="saveToFirebase()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl transition">Simpan ke Cloud</button>
+                <button onclick="saveToFirebase()" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 rounded-xl transition">Simpan ke Cloud</button>
             </div>
         </div>
 
@@ -84,7 +85,7 @@
         };
 
         window.openEditMode = (id, name, link, dc, galxe, type) => {
-            document.getElementById('formTitle').innerText = "Edit Project: " + name;
+            document.getElementById('formTitle').innerText = "Edit Project";
             document.getElementById('editId').value = id;
             document.getElementById('projName').value = name;
             document.getElementById('projLink').value = link;
@@ -93,6 +94,15 @@
             document.getElementById('projType').value = type;
             document.getElementById('adminForm').classList.remove('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Fungsi Cerdas: Simpan centang beserta tanggal hari ini
+        window.toggleCheck = async (id, isChecked) => {
+            const today = new Date().toLocaleDateString('en-CA'); // Format YYYY-MM-DD
+            await updateDoc(doc(db, "airdrops", id), { 
+                isChecked: !isChecked,
+                lastCheckedDate: !isChecked ? today : null 
+            });
         };
 
         window.saveToFirebase = async () => {
@@ -112,6 +122,8 @@
                         await updateDoc(doc(db, "airdrops", id), data);
                     } else {
                         data.createdAt = Date.now();
+                        data.isChecked = false;
+                        data.lastCheckedDate = null;
                         await addDoc(colRef, data);
                     }
                     document.getElementById('adminForm').classList.add('hidden');
@@ -126,24 +138,37 @@
         onSnapshot(query(colRef, orderBy("createdAt", "desc")), (snapshot) => {
             const dailyCont = document.getElementById('dailyContainer');
             const testnetCont = document.getElementById('testnetContainer');
+            const today = new Date().toLocaleDateString('en-CA');
+            
             dailyCont.innerHTML = ''; testnetCont.innerHTML = '';
 
             snapshot.docs.forEach(docSnap => {
                 const p = docSnap.data();
                 const id = docSnap.id;
+                
+                // LOGIKA AUTO-RESET: Kalau tanggal checklist bukan hari ini, anggap belum dicheck
+                let isChecked = p.isChecked || false;
+                if (isChecked && p.lastCheckedDate !== today) {
+                    isChecked = false;
+                    // Opsional: Update database secara silent agar sinkron
+                    updateDoc(doc(db, "airdrops", id), { isChecked: false, lastCheckedDate: null });
+                }
+                
                 const card = `
-                    <div class="glass-card p-5 rounded-2xl border border-slate-800 hover:border-sky-500/50 transition group shadow-lg relative">
+                    <div class="glass-card p-5 rounded-2xl border ${isChecked ? 'border-emerald-500/30 bg-emerald-900/10' : 'border-slate-800'} hover:border-sky-500/50 transition group shadow-lg">
                         <div class="flex items-start justify-between mb-4">
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" class="w-5 h-5 rounded border-slate-700 bg-slate-900 text-sky-500">
-                                <h3 class="font-bold text-white text-lg">${p.name}</h3>
+                            <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleCheck('${id}', ${isChecked})">
+                                <div class="w-6 h-6 rounded-md border-2 flex items-center justify-center transition ${isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600 bg-slate-900'}">
+                                    ${isChecked ? '<span class="text-white text-xs">✓</span>' : ''}
+                                </div>
+                                <h3 class="font-bold text-lg ${isChecked ? 'checked-text text-slate-500' : 'text-white'}">${p.name}</h3>
                             </div>
                             <div class="flex space-x-2 opacity-0 group-hover:opacity-100 transition">
                                 <button onclick="openEditMode('${id}', '${p.name}', '${p.link}', '${p.dc}', '${p.galxe}', '${p.type}')" class="text-slate-400 hover:text-sky-400">✏️</button>
                                 <button onclick="deleteProject('${id}')" class="text-slate-400 hover:text-rose-500">✕</button>
                             </div>
                         </div>
-                        <div class="flex flex-wrap gap-2">
+                        <div class="flex flex-wrap gap-2 ${isChecked ? 'opacity-40' : ''}">
                             <a href="${p.link}" target="_blank" class="btn-link bg-sky-900/40 text-sky-400 border border-sky-500/30 hover:bg-sky-500 hover:text-white">🌐 Web</a>
                             ${p.dc ? `<a href="${p.dc}" target="_blank" class="btn-link bg-indigo-900/40 text-indigo-400 border border-indigo-500/30 hover:bg-indigo-500 hover:text-white">👾 Discord</a>` : ''}
                             ${p.galxe ? `<a href="${p.galxe}" target="_blank" class="btn-link bg-purple-900/40 text-purple-400 border border-purple-500/30 hover:bg-purple-500 hover:text-white">🌌 Galxe</a>` : ''}
