@@ -2,7 +2,7 @@
   "name": "Airdrop Cloud",
   "short_name": "Airdrop",
   "description": "Airdrop & Testnet Daily Task Tracker",
-  "start_url": "/Airdrop/",
+  "start_url": "/airdrop/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#0ea5e9",
