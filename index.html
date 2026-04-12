@@ -15,82 +15,301 @@
     <link rel="apple-touch-icon" href="icon.svg">
 
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #e2e8f0; }
-        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
-        .input-field { background: #0f172a; border: 1px solid #1e293b; color: white; border-radius: 0.75rem; padding: 0.5rem 1rem; width: 100%; }
-        .btn-link { transition: all 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 0.4rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; flex: 1; min-height: 32px; }
-        .checked-text { text-decoration: line-through; opacity: 0.5; }
-        .tab-active { border-bottom: 3px solid #0ea5e9; color: #0ea5e9; }
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-        /* Safe area for notch/home bar */
-        body { padding-bottom: env(safe-area-inset-bottom); }
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* Subtle background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14,165,233,0.12), transparent),
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .content { position: relative; z-index: 1; }
+
+        /* Cards */
+        .card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 16px;
+            transition: all 0.25s ease;
+        }
+        .card:hover { border-color: rgba(14,165,233,0.2); transform: translateY(-1px); }
+        .card.done {
+            background: rgba(5, 46, 22, 0.3);
+            border-color: rgba(34,197,94,0.2);
+        }
+        .card.done:hover { border-color: rgba(34,197,94,0.4); transform: none; }
+
+        /* Form card */
+        .form-card {
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(14,165,233,0.2);
+            border-radius: 20px;
+            box-shadow: 0 0 40px rgba(14,165,233,0.08);
+        }
+
+        /* Input */
+        .input-field {
+            background: rgba(2, 6, 23, 0.8);
+            border: 1px solid rgba(255,255,255,0.08);
+            color: white;
+            border-radius: 12px;
+            padding: 0.6rem 1rem;
+            width: 100%;
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .input-field:focus { border-color: rgba(14,165,233,0.5); }
+        .input-field::placeholder { color: #475569; }
+
+        /* Tabs */
+        .tab-btn {
+            padding: 0.6rem 0;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #475569;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+            cursor: pointer;
+            background: none;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+        }
+        .tab-btn:hover { color: #94a3b8; }
+        .tab-btn.active { color: #0ea5e9; border-bottom-color: #0ea5e9; }
+
+        /* Link buttons */
+        .btn-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            border-radius: 8px;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+            flex: 1;
+            min-height: 30px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        /* Checkbox */
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border-radius: 6px;
+            border: 1.5px solid #334155;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .checkbox.checked { background: #22c55e; border-color: #22c55e; }
+
+        /* Progress bar */
+        .progress-bar {
+            height: 3px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 99px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0ea5e9, #6366f1);
+            border-radius: 99px;
+            transition: width 0.5s ease;
+        }
 
         /* Install banner */
-        #installBanner { display: none; position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 999; background: #0f172a; border: 1px solid #0ea5e9; border-radius: 1rem; padding: 0.75rem 1.25rem; box-shadow: 0 0 30px rgba(14,165,233,0.2); width: calc(100% - 2rem); max-width: 400px; }
+        #installBanner {
+            display: none;
+            position: fixed;
+            bottom: 1.25rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            background: rgba(15,23,42,0.95);
+            border: 1px solid rgba(14,165,233,0.3);
+            border-radius: 16px;
+            padding: 1rem 1.25rem;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 30px rgba(14,165,233,0.1);
+            width: calc(100% - 2rem);
+            max-width: 380px;
+            backdrop-filter: blur(20px);
+        }
+
+        /* Action buttons */
+        .btn-action {
+            width: 26px;
+            height: 26px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            transition: all 0.15s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .checked-text { text-decoration: line-through; }
+
+        /* Skeleton shimmer */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #0f172a 25%, #1e293b 50%, #0f172a 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 12px;
+        }
     </style>
 </head>
 <body class="p-4 md:p-6">
 
     <!-- PWA Install Banner -->
     <div id="installBanner">
-        <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2">
-                <img src="icon.svg" class="w-8 h-8 rounded-lg">
-                <div>
-                    <p class="text-xs font-bold text-white">Install Airdrop Cloud</p>
-                    <p class="text-[10px] text-slate-400">Bisa dipakai tanpa browser</p>
-                </div>
+        <div class="flex items-center gap-3">
+            <img src="icon.svg" class="w-10 h-10 rounded-xl flex-shrink-0">
+            <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-white">Install Airdrop Cloud</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Akses langsung dari home screen</p>
             </div>
-            <div class="flex gap-2">
-                <button onclick="document.getElementById('installBanner').style.display='none'" class="text-[10px] text-slate-400 px-2 py-1">Nanti</button>
-                <button id="installBtn" class="text-[10px] bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg font-bold">Install</button>
+            <div class="flex gap-2 flex-shrink-0">
+                <button onclick="document.getElementById('installBanner').style.display='none'" class="text-[10px] text-slate-500 hover:text-slate-300 px-2 py-1 transition">Nanti</button>
+                <button id="installBtn" class="text-[10px] bg-sky-500 hover:bg-sky-400 text-white px-3 py-1.5 rounded-lg font-semibold transition">Install</button>
             </div>
         </div>
     </div>
 
-    <div class="max-w-[1400px] mx-auto">
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div>
-                <h1 class="text-2xl font-extrabold text-white">Airdrop <span class="text-sky-500">Cloud</span></h1>
-                <p id="statusSync" class="text-slate-500 text-[10px] italic">● Menghubungkan...</p>
+    <div class="content max-w-[1400px] mx-auto">
+
+        <!-- Sticky Top Section -->
+        <div class="sticky top-0 z-50 -mx-4 md:-mx-6 px-4 md:px-6 pb-4 pt-4 md:pt-6" style="background: rgba(3,7,18,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.04);">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-5">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0ea5e9" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-white leading-none">Airdrop <span class="text-sky-400">Cloud</span></h1>
+                    <p id="statusSync" class="text-[10px] text-slate-600 mt-0.5">● Menghubungkan...</p>
+                </div>
             </div>
-            <button onclick="openAddMode()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition">
-                + Project
+            <button onclick="openAddMode()" class="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-400 text-white rounded-xl text-xs font-semibold transition shadow-lg shadow-sky-500/20">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 5v14M5 12h14"/></svg>
+                Tambah
             </button>
         </div>
 
-        <div class="flex space-x-8 border-b border-slate-800 mb-6">
-            <button id="tabDaily" onclick="switchTab('daily')" class="pb-2 text-sm font-bold transition tab-active uppercase tracking-wider">Airdrop Daily</button>
-            <button id="tabTestnet" onclick="switchTab('testnet')" class="pb-2 text-sm font-bold transition text-slate-500 hover:text-white uppercase tracking-wider">Testnet Daily</button>
+        <!-- Stats Bar -->
+        <div id="statsBar" class="hidden mb-6 grid grid-cols-3 gap-3">
+            <div class="card p-3 text-center">
+                <p id="statTotal" class="text-xl font-bold text-white">0</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Total</p>
+            </div>
+            <div class="card p-3 text-center">
+                <p id="statDone" class="text-xl font-bold text-emerald-400">0</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Done</p>
+            </div>
+            <div class="card p-3 text-center">
+                <p id="statLeft" class="text-xl font-bold text-sky-400">0</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">Sisa</p>
+            </div>
         </div>
 
-        <div id="adminForm" class="hidden mb-6 glass-card p-4 rounded-2xl border border-sky-500/20">
+        <!-- Progress -->
+        <div id="progressWrap" class="hidden mb-6">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Progress Hari Ini</span>
+                <span id="progressPct" class="text-[10px] text-sky-400 font-semibold">0%</span>
+            </div>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="flex space-x-6 border-b border-slate-800/80 mb-6">
+            <button id="tabDaily" class="tab-btn active" onclick="switchTab('daily')">Airdrop Daily</button>
+            <button id="tabTestnet" class="tab-btn" onclick="switchTab('testnet')">Testnet Daily</button>
+        </div>
+
+        </div><!-- end sticky -->
+
+        <!-- Add/Edit Form -->
+        <div id="adminForm" class="hidden mb-6 form-card p-5">
+            <p class="text-xs font-semibold text-slate-400 mb-4 uppercase tracking-wider">
+                <span id="formTitle">Tambah Project</span>
+            </p>
             <input type="hidden" id="editId">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                <input type="text" id="projName" placeholder="Nama Project" class="input-field text-xs">
-                <input type="text" id="projLink" placeholder="Web Utama" class="input-field text-xs">
-                <input type="text" id="projDC" placeholder="Discord Link" class="input-field text-xs">
-                <input type="text" id="projGalxe" placeholder="Galxe Link" class="input-field text-xs">
-                <select id="projType" class="input-field text-xs">
-                    <option value="daily">Daily</option>
+                <input type="text" id="projName" placeholder="Nama Project *" class="input-field">
+                <input type="text" id="projLink" placeholder="Website (opsional)" class="input-field">
+                <input type="text" id="projDC" placeholder="Discord (opsional)" class="input-field">
+                <input type="text" id="projGalxe" placeholder="Galxe (opsional)" class="input-field">
+                <select id="projType" class="input-field">
+                    <option value="daily">Daily Airdrop</option>
                     <option value="testnet">Testnet</option>
                 </select>
             </div>
-            <button onclick="saveToFirebase()" class="mt-3 w-full bg-sky-600 py-2 rounded-xl text-xs font-bold">Simpan ke Cloud</button>
+            <p class="text-[10px] text-slate-600 mt-2">* Hanya nama yang wajib diisi. Link web, DC, Galxe bebas diisi sesuai yang ada.</p>
+            <div class="flex gap-2 mt-4">
+                <button onclick="closeForm()" class="flex-1 py-2 rounded-xl text-xs font-semibold border border-slate-700 text-slate-400 hover:border-slate-500 hover:text-white transition">Batal</button>
+                <button onclick="saveToFirebase()" class="flex-1 py-2 bg-sky-500 hover:bg-sky-400 rounded-xl text-xs font-semibold text-white transition shadow-lg shadow-sky-500/20">Simpan</button>
+            </div>
         </div>
 
-        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+        <!-- Grid -->
+        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
+
+        <!-- Empty state -->
+        <div id="emptyState" class="hidden text-center py-20">
+            <div class="w-16 h-16 rounded-2xl bg-slate-800/50 flex items-center justify-center mx-auto mb-4">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+            </div>
+            <p class="text-slate-500 text-sm font-medium">Belum ada project</p>
+            <p class="text-slate-600 text-xs mt-1">Tap tombol Tambah untuk mulai</p>
+        </div>
     </div>
 
     <script>
-        // Register Service Worker
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/Airdrop/sw.js');
         }
 
-        // PWA Install Prompt
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -100,7 +319,7 @@
         document.getElementById('installBtn').addEventListener('click', async () => {
             if (!deferredPrompt) return;
             deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
+            await deferredPrompt.userChoice;
             deferredPrompt = null;
             document.getElementById('installBanner').style.display = 'none';
         });
@@ -119,8 +338,7 @@
             projectId: "airdrop-tracker-8e44d",
             storageBucket: "airdrop-tracker-8e44d.firebasestorage.app",
             messagingSenderId: "1007119634981",
-            appId: "1:1007119634981:web:31d5258545ce5cf9fd65cc",
-            measurementId: "G-W802MBMN4J"
+            appId: "1:1007119634981:web:31d5258545ce5cf9fd65cc"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -132,14 +350,24 @@
 
         window.switchTab = (tab) => {
             currentTab = tab;
-            document.getElementById('tabDaily').className = `pb-2 text-sm font-bold transition ${tab === 'daily' ? 'tab-active' : 'text-slate-500'}`;
-            document.getElementById('tabTestnet').className = `pb-2 text-sm font-bold transition ${tab === 'testnet' ? 'tab-active' : 'text-slate-500'}`;
+            document.getElementById('tabDaily').className = `tab-btn ${tab === 'daily' ? 'active' : ''}`;
+            document.getElementById('tabTestnet').className = `tab-btn ${tab === 'testnet' ? 'active' : ''}`;
             renderData();
         };
 
-        window.openAddMode = () => document.getElementById('adminForm').classList.toggle('hidden');
+        window.openAddMode = () => {
+            document.getElementById('editId').value = '';
+            document.getElementById('formTitle').innerText = 'Tambah Project';
+            ["projName","projLink","projDC","projGalxe"].forEach(i => document.getElementById(i).value = '');
+            document.getElementById('projType').value = 'daily';
+            document.getElementById('adminForm').classList.remove('hidden');
+            window.scrollTo({top: 0, behavior: 'smooth'});
+        };
 
-        // FUNGSI INTI: Checklist otomatis saat link diklik
+        window.closeForm = () => {
+            document.getElementById('adminForm').classList.add('hidden');
+        };
+
         window.handleLinkClick = async (id, isChecked) => {
             if (!isChecked) {
                 const today = new Date().toLocaleDateString('en-CA');
@@ -154,34 +382,41 @@
 
         window.saveToFirebase = async () => {
             const id = document.getElementById('editId').value;
+            const name = document.getElementById('projName').value.trim();
+            if (!name) {
+                document.getElementById('projName').focus();
+                document.getElementById('projName').style.borderColor = 'rgba(239,68,68,0.6)';
+                setTimeout(() => document.getElementById('projName').style.borderColor = '', 2000);
+                return;
+            }
             const data = {
-                name: document.getElementById('projName').value,
-                link: document.getElementById('projLink').value,
-                dc: document.getElementById('projDC').value,
-                galxe: document.getElementById('projGalxe').value,
+                name,
+                link: document.getElementById('projLink').value.trim(),
+                dc: document.getElementById('projDC').value.trim(),
+                galxe: document.getElementById('projGalxe').value.trim(),
                 type: document.getElementById('projType').value,
                 updatedAt: Date.now()
             };
-            if (data.name && data.link) {
-                if (id) await updateDoc(doc(db, "airdrops", id), data);
-                else { data.createdAt = Date.now(); data.isChecked = false; await addDoc(colRef, data); }
-                document.getElementById('adminForm').classList.add('hidden');
-                ["projName", "projLink", "projDC", "projGalxe"].forEach(i => document.getElementById(i).value = '');
-            }
+            if (id) await updateDoc(doc(db, "airdrops", id), data);
+            else { data.createdAt = Date.now(); data.isChecked = false; await addDoc(colRef, data); }
+            closeForm();
         };
 
         window.openEditMode = (id, name, link, dc, galxe, type) => {
             document.getElementById('editId').value = id;
             document.getElementById('projName').value = name;
-            document.getElementById('projLink').value = link;
+            document.getElementById('projLink').value = link || '';
             document.getElementById('projDC').value = dc || '';
             document.getElementById('projGalxe').value = galxe || '';
             document.getElementById('projType').value = type;
+            document.getElementById('formTitle').innerText = 'Edit Project';
             document.getElementById('adminForm').classList.remove('hidden');
-            window.scrollTo(0,0);
+            window.scrollTo({top: 0, behavior: 'smooth'});
         };
 
-        window.deleteProject = async (id) => { if(confirm("Hapus, sayang?")) await deleteDoc(doc(db, "airdrops", id)); };
+        window.deleteProject = async (id) => {
+            if (confirm("Hapus project ini?")) await deleteDoc(doc(db, "airdrops", id));
+        };
 
         const renderData = () => {
             const container = document.getElementById('mainGrid');
@@ -200,36 +435,88 @@
                 return a.displayChecked ? 1 : -1;
             });
 
+            // Stats
+            const total = processed.length;
+            const done = processed.filter(p => p.displayChecked).length;
+            const left = total - done;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+
+            if (total > 0) {
+                document.getElementById('statsBar').classList.remove('hidden');
+                document.getElementById('progressWrap').classList.remove('hidden');
+                document.getElementById('statTotal').innerText = total;
+                document.getElementById('statDone').innerText = done;
+                document.getElementById('statLeft').innerText = left;
+                document.getElementById('progressFill').style.width = pct + '%';
+                document.getElementById('progressPct').innerText = pct + '%';
+            } else {
+                document.getElementById('statsBar').classList.add('hidden');
+                document.getElementById('progressWrap').classList.add('hidden');
+            }
+
+            document.getElementById('emptyState').classList.toggle('hidden', total > 0);
+
             processed.forEach(p => {
                 const isChecked = p.displayChecked;
+
+                // Escape strings for inline onclick attributes
+                const safeName = p.name.replace(/'/g, "\\'");
+                const safeLink = (p.link || '').replace(/'/g, "\\'");
+                const safeDC = (p.dc || '').replace(/'/g, "\\'");
+                const safeGalxe = (p.galxe || '').replace(/'/g, "\\'");
+
+                const webBtn = p.link
+                    ? `<a href="${p.link}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})"
+                         class="btn-link bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white hover:border-sky-500">
+                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+                         Web</a>` : '';
+
+                const dcBtn = p.dc
+                    ? `<a href="${p.dc}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})"
+                         class="btn-link bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500">
+                         <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+                         DC</a>` : '';
+
+                const galxeBtn = p.galxe
+                    ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})"
+                         class="btn-link bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white hover:border-purple-500">
+                         <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                         GX</a>` : '';
+
+                const hasDone = isChecked;
+
                 container.innerHTML += `
-                    <div class="glass-card p-3 rounded-xl border ${isChecked ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-slate-800'} relative group transition-all duration-300">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center space-x-2 cursor-pointer flex-1" onclick="toggleCheck('${p.id}', ${isChecked})">
-                                <div class="w-4 h-4 rounded border transition flex items-center justify-center ${isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'}">
-                                    ${isChecked ? '<span class="text-[10px]">✓</span>' : ''}
-                                </div>
-                                <h3 class="font-bold text-xs truncate ${isChecked ? 'checked-text text-slate-500' : 'text-slate-100'}">${p.name}</h3>
+                <div class="card ${hasDone ? 'done' : ''} p-4 group">
+                    <div class="flex items-start justify-between mb-3 gap-2">
+                        <div class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0" onclick="toggleCheck('${p.id}', ${isChecked})">
+                            <div class="checkbox ${isChecked ? 'checked' : ''}">
+                                ${isChecked ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>` : ''}
                             </div>
-                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
-                                <button onclick="openEditMode('${p.id}','${p.name}','${p.link}','${p.dc}','${p.galxe}','${p.type}')" class="text-[10px]">✏️</button>
-                                <button onclick="deleteProject('${p.id}')" class="text-[10px]">✕</button>
-                            </div>
+                            <h3 class="font-semibold text-sm leading-tight truncate ${isChecked ? 'checked-text text-slate-600' : 'text-slate-100'}">${p.name}</h3>
                         </div>
-                        <div class="flex gap-1 ${isChecked ? 'opacity-40' : ''}">
-                            <a href="${p.link}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-sky-900/30 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white">Web</a>
-                            ${p.dc ? `<a href="${p.dc}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-indigo-900/30 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white">DC</a>` : ''}
-                            ${p.galxe ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-purple-900/30 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white">GX</a>` : ''}
+                        <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
+                            <button onclick="openEditMode('${p.id}','${safeName}','${safeLink}','${safeDC}','${safeGalxe}','${p.type}')"
+                                class="btn-action bg-slate-700/50 hover:bg-slate-600 text-slate-400 hover:text-white">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                            </button>
+                            <button onclick="deleteProject('${p.id}')"
+                                class="btn-action bg-slate-700/50 hover:bg-red-500/20 text-slate-400 hover:text-red-400">
+                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M3 6h18M19 6l-1 14H6L5 6M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+                            </button>
                         </div>
                     </div>
-                `;
+                    <div class="flex gap-1.5 ${isChecked ? 'opacity-30' : ''}">
+                        ${webBtn}${dcBtn}${galxeBtn}
+                    </div>
+                </div>`;
             });
         };
 
         onSnapshot(query(colRef, orderBy("createdAt", "desc")), (snap) => {
             allData = snap.docs.map(d => ({id: d.id, ...d.data()}));
             renderData();
-            document.getElementById('statusSync').innerText = "● Terkoneksi: " + new Date().toLocaleTimeString();
+            const time = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+            document.getElementById('statusSync').innerText = `● Sync ${time}`;
         });
     </script>
 </body>
