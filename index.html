@@ -693,10 +693,13 @@ TWEET2: [tweet text here]
 TWEET3: [tweet text here]`;
 
             try {
-                const res = await fetch('/Airdrop/proxy.php', {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                     method: 'POST',
                     headers: {'Content-Type':'application/json'},
-                    body: JSON.stringify({apiKey, system, userMessage: userMsg})
+                    body: JSON.stringify({
+                        contents: [{role:'user', parts:[{text: system + '\n\n' + userMsg}]}],
+                        generationConfig: {maxOutputTokens:1024, temperature:0.9}
+                    })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error?.message || 'API error');
