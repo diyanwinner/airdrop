@@ -340,6 +340,10 @@
                 </div>
                 <div id="apiKeyStatus" class="text-[10px] px-2.5 py-1 rounded-full border font-medium"></div>
             </div>
+            <div class="relative mb-4">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" id="yapSearch" placeholder="Cari project..." class="input-field pl-9" oninput="filterYapping(this.value)">
+            </div>
             <div id="yappingList" class="space-y-2"></div>
             <div id="yappingEmpty" class="hidden text-center py-16">
                 <p class="text-slate-500 text-sm font-medium">Belum ada project</p>
@@ -581,6 +585,15 @@
             });
         };
 
+        // ── Filter Yapping ────────────────────────────────────
+        window.filterYapping = (q) => {
+            const keyword = q.toLowerCase();
+            document.querySelectorAll('#yappingList .yap-item').forEach(el => {
+                const name = el.dataset.name || '';
+                el.style.display = name.includes(keyword) ? '' : 'none';
+            });
+        };
+
         // ── Render Yapping ────────────────────────────────────
         const renderYapping = () => {
             updateApiKeyStatus();
@@ -601,7 +614,7 @@
                 const descLine   = p.projectDesc   ? ` · ${p.projectDesc}` : '';
 
                 list.innerHTML += `
-                <div class="yap-item flex items-center gap-3">
+                <div class="yap-item flex items-center gap-3" data-name="${p.name.toLowerCase()}">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center gap-2 mb-0.5 flex-wrap">
                             <h3 class="text-sm font-semibold text-white truncate">${p.name}</h3>
