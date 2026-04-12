@@ -1,9 +1,9 @@
 const CACHE_NAME = 'airdrop-v1';
 const STATIC_ASSETS = [
-  '/Airdrop/',
-  '/Airdrop/index.html',
-  '/Airdrop/manifest.json',
-  '/Airdrop/icon.svg'
+  './',
+  './index.html',
+  './manifest.json',
+  './icon.svg'
 ];
 
 self.addEventListener('install', e => {
