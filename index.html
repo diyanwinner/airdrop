@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Airdrop Cloud</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0ea5e9">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Airdrop">
+    <link rel="apple-touch-icon" href="icon.svg">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #020617; color: #e2e8f0; }
+        .glass-card { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
+        .input-field { background: #0f172a; border: 1px solid #1e293b; color: white; border-radius: 0.75rem; padding: 0.5rem 1rem; width: 100%; }
+        .btn-link { transition: all 0.2s; display: flex; align-items: center; justify-content: center; border-radius: 0.4rem; padding: 0.35rem 0.5rem; font-size: 0.75rem; font-weight: 600; flex: 1; min-height: 32px; }
+        .checked-text { text-decoration: line-through; opacity: 0.5; }
+        .tab-active { border-bottom: 3px solid #0ea5e9; color: #0ea5e9; }
+
+        /* Safe area for notch/home bar */
+        body { padding-bottom: env(safe-area-inset-bottom); }
+
+        /* Install banner */
+        #installBanner { display: none; position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%); z-index: 999; background: #0f172a; border: 1px solid #0ea5e9; border-radius: 1rem; padding: 0.75rem 1.25rem; box-shadow: 0 0 30px rgba(14,165,233,0.2); width: calc(100% - 2rem); max-width: 400px; }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+    <!-- PWA Install Banner -->
+    <div id="installBanner">
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <img src="icon.svg" class="w-8 h-8 rounded-lg">
+                <div>
+                    <p class="text-xs font-bold text-white">Install Airdrop Cloud</p>
+                    <p class="text-[10px] text-slate-400">Bisa dipakai tanpa browser</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="document.getElementById('installBanner').style.display='none'" class="text-[10px] text-slate-400 px-2 py-1">Nanti</button>
+                <button id="installBtn" class="text-[10px] bg-sky-600 hover:bg-sky-500 text-white px-3 py-1.5 rounded-lg font-bold">Install</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-[1400px] mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-2xl font-extrabold text-white">Airdrop <span class="text-sky-500">Cloud</span></h1>
+                <p id="statusSync" class="text-slate-500 text-[10px] italic">● Menghubungkan...</p>
+            </div>
+            <button onclick="openAddMode()" class="px-4 py-2 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition">
+                + Project
+            </button>
+        </div>
+
+        <div class="flex space-x-8 border-b border-slate-800 mb-6">
+            <button id="tabDaily" onclick="switchTab('daily')" class="pb-2 text-sm font-bold transition tab-active uppercase tracking-wider">Airdrop Daily</button>
+            <button id="tabTestnet" onclick="switchTab('testnet')" class="pb-2 text-sm font-bold transition text-slate-500 hover:text-white uppercase tracking-wider">Testnet Daily</button>
+        </div>
+
+        <div id="adminForm" class="hidden mb-6 glass-card p-4 rounded-2xl border border-sky-500/20">
+            <input type="hidden" id="editId">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                <input type="text" id="projName" placeholder="Nama Project" class="input-field text-xs">
+                <input type="text" id="projLink" placeholder="Web Utama" class="input-field text-xs">
+                <input type="text" id="projDC" placeholder="Discord Link" class="input-field text-xs">
+                <input type="text" id="projGalxe" placeholder="Galxe Link" class="input-field text-xs">
+                <select id="projType" class="input-field text-xs">
+                    <option value="daily">Daily</option>
+                    <option value="testnet">Testnet</option>
+                </select>
+            </div>
+            <button onclick="saveToFirebase()" class="mt-3 w-full bg-sky-600 py-2 rounded-xl text-xs font-bold">Simpan ke Cloud</button>
+        </div>
+
+        <div id="mainGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"></div>
+    </div>
+
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/Airdrop/sw.js');
+        }
+
+        // PWA Install Prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBanner').style.display = 'block';
+        });
+        document.getElementById('installBtn').addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            document.getElementById('installBanner').style.display = 'none';
+        });
+        window.addEventListener('appinstalled', () => {
+            document.getElementById('installBanner').style.display = 'none';
+        });
+    </script>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, updateDoc, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCI4p5ScfdKBwNeAABj8N-G24sT1sIn1g4",
+            authDomain: "airdrop-tracker-8e44d.firebaseapp.com",
+            projectId: "airdrop-tracker-8e44d",
+            storageBucket: "airdrop-tracker-8e44d.firebasestorage.app",
+            messagingSenderId: "1007119634981",
+            appId: "1:1007119634981:web:31d5258545ce5cf9fd65cc",
+            measurementId: "G-W802MBMN4J"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const colRef = collection(db, "airdrops");
+
+        let currentTab = 'daily';
+        let allData = [];
+
+        window.switchTab = (tab) => {
+            currentTab = tab;
+            document.getElementById('tabDaily').className = `pb-2 text-sm font-bold transition ${tab === 'daily' ? 'tab-active' : 'text-slate-500'}`;
+            document.getElementById('tabTestnet').className = `pb-2 text-sm font-bold transition ${tab === 'testnet' ? 'tab-active' : 'text-slate-500'}`;
+            renderData();
+        };
+
+        window.openAddMode = () => document.getElementById('adminForm').classList.toggle('hidden');
+
+        // FUNGSI INTI: Checklist otomatis saat link diklik
+        window.handleLinkClick = async (id, isChecked) => {
+            if (!isChecked) {
+                const today = new Date().toLocaleDateString('en-CA');
+                await updateDoc(doc(db, "airdrops", id), { isChecked: true, lastCheckedDate: today });
+            }
+        };
+
+        window.toggleCheck = async (id, isChecked) => {
+            const today = new Date().toLocaleDateString('en-CA');
+            await updateDoc(doc(db, "airdrops", id), { isChecked: !isChecked, lastCheckedDate: !isChecked ? today : null });
+        };
+
+        window.saveToFirebase = async () => {
+            const id = document.getElementById('editId').value;
+            const data = {
+                name: document.getElementById('projName').value,
+                link: document.getElementById('projLink').value,
+                dc: document.getElementById('projDC').value,
+                galxe: document.getElementById('projGalxe').value,
+                type: document.getElementById('projType').value,
+                updatedAt: Date.now()
+            };
+            if (data.name && data.link) {
+                if (id) await updateDoc(doc(db, "airdrops", id), data);
+                else { data.createdAt = Date.now(); data.isChecked = false; await addDoc(colRef, data); }
+                document.getElementById('adminForm').classList.add('hidden');
+                ["projName", "projLink", "projDC", "projGalxe"].forEach(i => document.getElementById(i).value = '');
+            }
+        };
+
+        window.openEditMode = (id, name, link, dc, galxe, type) => {
+            document.getElementById('editId').value = id;
+            document.getElementById('projName').value = name;
+            document.getElementById('projLink').value = link;
+            document.getElementById('projDC').value = dc || '';
+            document.getElementById('projGalxe').value = galxe || '';
+            document.getElementById('projType').value = type;
+            document.getElementById('adminForm').classList.remove('hidden');
+            window.scrollTo(0,0);
+        };
+
+        window.deleteProject = async (id) => { if(confirm("Hapus, sayang?")) await deleteDoc(doc(db, "airdrops", id)); };
+
+        const renderData = () => {
+            const container = document.getElementById('mainGrid');
+            const today = new Date().toLocaleDateString('en-CA');
+            container.innerHTML = '';
+
+            let filtered = allData.filter(p => p.type === currentTab);
+            let processed = filtered.map(p => {
+                let isChecked = p.isChecked || false;
+                if (isChecked && p.lastCheckedDate !== today) isChecked = false;
+                return { ...p, displayChecked: isChecked };
+            });
+
+            processed.sort((a, b) => {
+                if (a.displayChecked === b.displayChecked) return b.createdAt - a.createdAt;
+                return a.displayChecked ? 1 : -1;
+            });
+
+            processed.forEach(p => {
+                const isChecked = p.displayChecked;
+                container.innerHTML += `
+                    <div class="glass-card p-3 rounded-xl border ${isChecked ? 'border-emerald-500/30 bg-emerald-950/10' : 'border-slate-800'} relative group transition-all duration-300">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-2 cursor-pointer flex-1" onclick="toggleCheck('${p.id}', ${isChecked})">
+                                <div class="w-4 h-4 rounded border transition flex items-center justify-center ${isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-slate-600'}">
+                                    ${isChecked ? '<span class="text-[10px]">✓</span>' : ''}
+                                </div>
+                                <h3 class="font-bold text-xs truncate ${isChecked ? 'checked-text text-slate-500' : 'text-slate-100'}">${p.name}</h3>
+                            </div>
+                            <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition">
+                                <button onclick="openEditMode('${p.id}','${p.name}','${p.link}','${p.dc}','${p.galxe}','${p.type}')" class="text-[10px]">✏️</button>
+                                <button onclick="deleteProject('${p.id}')" class="text-[10px]">✕</button>
+                            </div>
+                        </div>
+                        <div class="flex gap-1 ${isChecked ? 'opacity-40' : ''}">
+                            <a href="${p.link}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-sky-900/30 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white">Web</a>
+                            ${p.dc ? `<a href="${p.dc}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-indigo-900/30 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white">DC</a>` : ''}
+                            ${p.galxe ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}', ${isChecked})" class="btn-link bg-purple-900/30 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white">GX</a>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        };
+
+        onSnapshot(query(colRef, orderBy("createdAt", "desc")), (snap) => {
+            allData = snap.docs.map(d => ({id: d.id, ...d.data()}));
+            renderData();
+            document.getElementById('statusSync').innerText = "● Terkoneksi: " + new Date().toLocaleTimeString();
+        });
+    </script>
+</body>
+</html>
