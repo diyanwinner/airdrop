@@ -1,4 +1,5 @@
-const CACHE_NAME = 'airdrop-v1';
+// ⚠️ Update versi ini setiap kali deploy (e.g. v2, v3, ...)
+const CACHE_NAME = 'airdrop-v2';
 const STATIC_ASSETS = [
   './',
   './index.html',
