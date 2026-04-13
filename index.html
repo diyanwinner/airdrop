@@ -231,7 +231,7 @@
             <button onclick="generateTweets()" id="generateBtn"
                 class="w-full py-2.5 bg-violet-500 hover:bg-violet-400 rounded-xl text-xs font-semibold text-white transition mb-4 flex items-center justify-center gap-2 shadow-lg shadow-violet-500/20">
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-                Generate 3 Tweets
+                Generate 2 Tweets
             </button>
 
             <div id="tweetsOutput" class="space-y-3"></div>
@@ -480,15 +480,17 @@
             closeForm();
         };
 
-        window.openEditMode = (id, name, link, dc, galxe, type, twitterHandle, projectDesc) => {
+        window.openEditMode = (id) => {
+            const p = allData.find(x => x.id === id);
+            if (!p) return;
             document.getElementById('editId').value       = id;
-            document.getElementById('projName').value     = name;
-            document.getElementById('projLink').value     = link || '';
-            document.getElementById('projDC').value       = dc || '';
-            document.getElementById('projGalxe').value    = galxe || '';
-            document.getElementById('projTwitter').value  = twitterHandle || '';
-            document.getElementById('projDesc').value     = projectDesc || '';
-            document.getElementById('projType').value     = type;
+            document.getElementById('projName').value     = p.name || '';
+            document.getElementById('projLink').value     = p.link || '';
+            document.getElementById('projDC').value       = p.dc || '';
+            document.getElementById('projGalxe').value    = p.galxe || '';
+            document.getElementById('projTwitter').value  = p.twitterHandle || '';
+            document.getElementById('projDesc').value     = p.projectDesc || '';
+            document.getElementById('projType').value     = p.type || 'daily';
             document.getElementById('formTitle').innerText = 'Edit Project';
             document.getElementById('adminForm').classList.remove('hidden');
             window.scrollTo({top: 0, behavior: 'smooth'});
@@ -546,13 +548,6 @@
 
             processed.forEach(p => {
                 const isChecked = p.displayChecked;
-                const safeName   = (p.name||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
-                const safeLink   = (p.link||'').replace(/'/g,"\\'");
-                const safeDC     = (p.dc||'').replace(/'/g,"\\'");
-                const safeGalxe  = (p.galxe||'').replace(/'/g,"\\'");
-                const safeType   = (p.type||'').replace(/'/g,"\\'");
-                const safeTwitter = (p.twitterHandle||'').replace(/'/g,"\\'");
-                const safeDesc   = (p.projectDesc||'').replace(/'/g,"\\'");
 
                 const webBtn = p.link ? `<a href="${p.link}" target="_blank" onclick="handleLinkClick('${p.id}',${isChecked})" class="btn-link bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white hover:border-sky-500"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>Web</a>` : '';
                 const dcBtn  = p.dc   ? `<a href="${p.dc}"   target="_blank" onclick="handleLinkClick('${p.id}',${isChecked})" class="btn-link bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>DC</a>` : '';
@@ -568,7 +563,7 @@
                             <h3 class="font-semibold text-sm leading-tight truncate ${isChecked?'checked-text text-slate-600':'text-slate-100'}">${p.name}</h3>
                         </div>
                         <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition flex-shrink-0">
-                            <button onclick="openEditMode('${p.id}','${safeName}','${safeLink}','${safeDC}','${safeGalxe}','${safeType}','${safeTwitter}','${safeDesc}')"
+                            <button onclick="openEditMode('${p.id}')"
                                 class="btn-action bg-slate-700/50 hover:bg-slate-600 text-slate-400 hover:text-white">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                             </button>
@@ -649,7 +644,7 @@
 
             document.getElementById('tweetsOutput').innerHTML = '';
             document.getElementById('generateBtn').disabled = false;
-            document.getElementById('generateBtn').innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate 3 Tweets`;
+            document.getElementById('generateBtn').innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate 2 Tweets`;
             document.getElementById('yapModal').classList.remove('hidden');
         };
         window.closeYap = () => document.getElementById('yapModal').classList.add('hidden');
@@ -667,30 +662,25 @@
             btn.innerHTML = `<svg class="spinner" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...`;
             document.getElementById('tweetsOutput').innerHTML = '';
 
-            const system = `You are a crypto Twitter influencer known for sharp alpha calls and hype posts. You write punchy, authentic English tweets that feel real — not like a bot or a press release. You understand Web3, airdrops, and testnet culture.`;
+            const system = `You are a regular crypto guy who's been doing airdrops and testnets for years. You tweet casually — like a real person, not a marketer. Your tweets are short, natural, sometimes lowkey, sometimes hype but never cringe. No corporate speak, no "LFG!!!" every sentence. You sound like someone who actually uses these protocols daily.`;
 
-            const userMsg = `Generate exactly 3 tweet variations for this crypto/airdrop project. Each tweet must be under 280 characters.
+            const userMsg = `Write 2 tweet variations about completing daily tasks for this project. Make them sound like a real person tweeting, not a bot or influencer template.
 
-Project name: ${p.name}
-Twitter handle: ${p.twitterHandle || '(not provided)'}
-Description: ${p.projectDesc || 'A Web3/blockchain airdrop project'}
-Context: I just completed my daily task/airdrop mission for this project.
+Project: ${p.name}
+Handle: ${p.twitterHandle || '(not provided)'}
+About: ${p.projectDesc || 'a Web3/airdrop project'}
 
-Rules:
-- English only
-- Include the Twitter handle in each tweet if provided
-- Alpha call / shill tone — hype but credible
-- Variation 1: focus on the opportunity / why it's early
-- Variation 2: FOMO / hype angle
-- Variation 3: casual daily grind update style
-- Max 2 hashtags per tweet, make them relevant (#Airdrop, #Web3, or project-specific)
-- Each tweet must be under 280 characters (count carefully)
-- Do NOT use quotation marks around the tweets
+Guidelines:
+- Sound human — casual, a bit raw, not polished
+- Vary the energy: one can be lowkey/chill, one can be more hype — but neither should feel forced
+- Mention the handle if provided, naturally (not always at the start)
+- Hashtags: 0-1 max, only if it flows naturally — skip them if it feels forced
+- Under 280 chars each
+- No quotation marks
 
-Format your response EXACTLY like this (no extra text):
-TWEET1: [tweet text here]
-TWEET2: [tweet text here]
-TWEET3: [tweet text here]`;
+Reply format (nothing else):
+TWEET1: [text]
+TWEET2: [text]`;
 
             try {
                 const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -714,17 +704,21 @@ TWEET3: [tweet text here]`;
 
                 if (tweets.length === 0) throw new Error('Format tidak terbaca, coba generate ulang.');
 
+                // Store tweets in closure so copy buttons can access by index
+                window._currentTweets = tweets;
+
                 const output = document.getElementById('tweetsOutput');
                 output.innerHTML = tweets.map((tweet, i) => {
                     const len = tweet.length;
-                    const safe = tweet.replace(/`/g,'\\`').replace(/\\/g,'\\\\');
+                    // Escape HTML for safe display only — no inline JS injection
+                    const display = tweet.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
                     return `
                     <div class="tweet-card" id="tweetCard${i}">
-                        <p class="text-xs text-slate-200 leading-relaxed mb-3">${tweet}</p>
+                        <p class="text-xs text-slate-200 leading-relaxed mb-3">${display}</p>
                         <div class="flex items-center justify-between">
                             <span class="text-[10px] font-mono ${len>280?'text-red-400 font-bold':'text-slate-600'}">${len}/280 ${len>280?'⚠ too long':''}</span>
-                            <button onclick="copyTweet(this, \`${safe}\`, 'tweetCard${i}')"
-                                class="text-[10px] px-3 py-1 rounded-lg font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/25 hover:bg-violet-500 hover:text-white transition">
+                            <button data-tweet-index="${i}" data-card-id="tweetCard${i}"
+                                class="copy-btn text-[10px] px-3 py-1 rounded-lg font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/25 hover:bg-violet-500 hover:text-white transition">
                                 Copy
                             </button>
                         </div>
@@ -734,6 +728,27 @@ TWEET3: [tweet text here]`;
                     ↻ Regenerate
                 </button>`;
 
+                // Attach copy listeners via event delegation — no inline JS
+                output.addEventListener('click', (e) => {
+                    const btn = e.target.closest('.copy-btn');
+                    if (!btn) return;
+                    const idx    = parseInt(btn.dataset.tweetIndex);
+                    const cardId = btn.dataset.cardId;
+                    const text   = window._currentTweets?.[idx];
+                    if (text == null) return;
+                    navigator.clipboard.writeText(text).then(() => {
+                        btn.textContent = '✓ Copied!';
+                        btn.className = 'copy-btn text-[10px] px-3 py-1 rounded-lg font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition';
+                        const card = document.getElementById(cardId);
+                        if (card) card.classList.add('copy-flash');
+                        setTimeout(() => {
+                            btn.textContent = 'Copy';
+                            btn.className = 'copy-btn text-[10px] px-3 py-1 rounded-lg font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/25 hover:bg-violet-500 hover:text-white transition';
+                            if (card) card.classList.remove('copy-flash');
+                        }, 2000);
+                    });
+                }, { once: true });
+
             } catch(err) {
                 document.getElementById('tweetsOutput').innerHTML = `
                 <div class="tweet-card border-red-500/20">
@@ -742,22 +757,9 @@ TWEET3: [tweet text here]`;
             }
 
             btn.disabled = false;
-            btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate 3 Tweets`;
+            btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate 2 Tweets`;
         };
 
-        window.copyTweet = (btn, text, cardId) => {
-            navigator.clipboard.writeText(text).then(() => {
-                btn.textContent = '✓ Copied!';
-                btn.className = 'text-[10px] px-3 py-1 rounded-lg font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition';
-                const card = document.getElementById(cardId);
-                if (card) card.classList.add('copy-flash');
-                setTimeout(() => {
-                    btn.textContent = 'Copy';
-                    btn.className = 'text-[10px] px-3 py-1 rounded-lg font-semibold bg-violet-500/15 text-violet-400 border border-violet-500/25 hover:bg-violet-500 hover:text-white transition';
-                    if (card) card.classList.remove('copy-flash');
-                }, 2000);
-            });
-        };
 
         // ── Firebase listener ─────────────────────────────────
         onSnapshot(query(colRef, orderBy("createdAt","desc")), (snap) => {
