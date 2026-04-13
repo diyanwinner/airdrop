@@ -671,7 +671,8 @@ Handle: ${p.twitterHandle || '(not provided)'}
 About: ${p.projectDesc || 'a Web3/airdrop project'}
 
 Hard rules — break any of these and it's wrong:
-- ALWAYS mention the handle (e.g. @aeredium) somewhere in the tweet if provided — this is mandatory
+- If handle is provided: ALWAYS include it in the tweet exactly as given (e.g. if handle is @aeredium, write @aeredium — do not modify it)
+- If handle is NOT provided (marked as "not provided"): do NOT invent or guess any handle — write the project name as plain text only
 - NEVER start a tweet with "Just" or "just got" or "just did" or "just completed"
 - NEVER use the same opening word for both tweets
 - No templates like "not gonna lie," back to back
