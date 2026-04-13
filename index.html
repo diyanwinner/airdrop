@@ -662,23 +662,32 @@
             btn.innerHTML = `<svg class="spinner" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...`;
             document.getElementById('tweetsOutput').innerHTML = '';
 
-            const system = `You are a regular crypto guy who's been doing airdrops and testnets for years. You tweet casually — like a real person, not a marketer. Your tweets are short, natural, sometimes lowkey, sometimes hype but never cringe. No corporate speak, no "LFG!!!" every sentence. You sound like someone who actually uses these protocols daily.`;
+            const system = `You are a real person who does crypto airdrops as a side hustle. You tweet like a normal human — sometimes you talk about the project, sometimes about your experience using it, sometimes you share an opinion or a take. Your writing style is casual, a little unpolished, no hype bro energy. You never start two tweets the same way. You mix up sentence structures. Sometimes a statement, sometimes a question, sometimes a hot take.`;
 
-            const userMsg = `Write 2 tweet variations about completing daily tasks for this project. Make them sound like a real person tweeting, not a bot or influencer template.
+            const userMsg = `I did my daily airdrop task for ${p.name} today. Write 2 tweets about it.
 
 Project: ${p.name}
 Handle: ${p.twitterHandle || '(not provided)'}
 About: ${p.projectDesc || 'a Web3/airdrop project'}
 
-Guidelines:
-- Sound human — casual, a bit raw, not polished
-- Vary the energy: one can be lowkey/chill, one can be more hype — but neither should feel forced
-- Mention the handle if provided, naturally (not always at the start)
-- Hashtags: 0-1 max, only if it flows naturally — skip them if it feels forced
-- Under 280 chars each
+Hard rules — break any of these and it's wrong:
+- NEVER start a tweet with "Just" or "just got" or "just did" or "just completed"
+- NEVER use the same opening word for both tweets
+- No templates like "not gonna lie," back to back
+- No hashtags unless it genuinely fits — if you add one, make it specific, not generic #Airdrop
+- Each tweet must feel like it was written by a different mood/angle
+- Under 280 chars
 - No quotation marks
 
-Reply format (nothing else):
+Ideas for openers (pick different ones, or invent your own):
+- an opinion about the project tech
+- something you noticed while using it
+- a reaction to the project's potential
+- a casual mention mid-thought
+- addressing the project directly
+- a short take or prediction
+
+Reply format only, nothing else:
 TWEET1: [text]
 TWEET2: [text]`;
 
