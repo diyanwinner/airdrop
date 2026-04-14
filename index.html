@@ -677,18 +677,17 @@ BANNED words and phrases (using any of these = failure):
 - "pretty standard", "as usual", "once again"
 - "LFG", "ser", "wagmi", "gm"
 - Any hashtag with the word "Airdrop" or "Web3"
+- Technical acronyms or jargon taken directly from the description (e.g. "TEE", "ZK", "EVM") — if you reference the tech, explain it simply in plain words, don't just drop the acronym
 
 Handle rules:
 - If handle provided: include it naturally somewhere in at least one tweet — exactly as given, no changes
 - If handle is "(not provided)": use the project name as plain text, never invent an @handle
 
-What makes a tweet feel real vs bot:
-- Real: "TEE-attested execution is lowkey the most underrated security approach right now. been using @aeredium daily and it's starting to click"
-- Bot: "just crushed my daily tasks for @aeredium and got rewards, build momentum ser"
-- Real: "hardware-verified execution sounds boring until you realize what it actually means for trustless compute. @aeredium been living in my tabs lately"
-- Bot: "daily grind, daily rewards, moving forward with @aeredium #Web3"
+Angle: talk about the project itself — what it does, why it's interesting, what you think about it — NOT about the habit of doing daily tasks.
 
-The difference: real tweets talk about the THING, not about the HABIT of doing the thing.
+Each tweet must be genuinely different in structure and angle from the other. Do not repeat phrasing patterns.
+
+Under 280 chars each. No quotation marks.
 
 Format (nothing else):
 TWEET1: [text]
@@ -702,7 +701,7 @@ TWEET2: [text]`;
                         model: 'llama-3.3-70b-versatile',
                         messages: [{role:'system', content: system}, {role:'user', content: userMsg}],
                         max_tokens: 1024,
-                        temperature: 0.9
+                        temperature: 1.2
                     })
                 });
                 const data = await res.json();
