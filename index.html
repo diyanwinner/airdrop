@@ -662,34 +662,35 @@
             btn.innerHTML = `<svg class="spinner" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Generating...`;
             document.getElementById('tweetsOutput').innerHTML = '';
 
-            const system = `You are a real person who does crypto airdrops as a side hustle. You tweet like a normal human — sometimes you talk about the project, sometimes about your experience using it, sometimes you share an opinion or a take. Your writing style is casual, a little unpolished, no hype bro energy. You never start two tweets the same way. You mix up sentence structures. Sometimes a statement, sometimes a question, sometimes a hot take.`;
+            const system = `You write tweets that sound like a real person — not a crypto marketer, not a bot. Real people tweet observations, reactions, half-thoughts. They don't announce what they did. They react to it.`;
 
-            const userMsg = `I did my daily airdrop task for ${p.name} today. Write 2 tweets about it.
+            const userMsg = `Write 2 tweets. I did my daily task on ${p.name} today.
 
 Project: ${p.name}
-Handle: ${p.twitterHandle || '(not provided)'}
-About: ${p.projectDesc || 'a Web3/airdrop project'}
+Twitter handle: ${p.twitterHandle || '(not provided)'}
+What it is: ${p.projectDesc || 'a Web3/airdrop project'}
 
-Hard rules — break any of these and it's wrong:
-- If handle is provided: ALWAYS include it in the tweet exactly as given (e.g. if handle is @aeredium, write @aeredium — do not modify it)
-- If handle is NOT provided (marked as "not provided"): do NOT invent or guess any handle — write the project name as plain text only
-- NEVER start a tweet with "Just" or "just got" or "just did" or "just completed"
-- NEVER use the same opening word for both tweets
-- No templates like "not gonna lie," back to back
-- No hashtags unless it genuinely fits — if you add one, make it specific, not generic #Airdrop
-- Each tweet must feel like it was written by a different mood/angle
-- Under 280 chars
-- No quotation marks
+BANNED words and phrases (using any of these = failure):
+- "just" at the start, "just crushed", "just completed", "just did", "just got"
+- "daily grind", "daily tasks", "daily rewards", "daily quest"
+- "moving forward", "build momentum", "level up"
+- "pretty standard", "as usual", "once again"
+- "LFG", "ser", "wagmi", "gm"
+- Any hashtag with the word "Airdrop" or "Web3"
 
-Ideas for openers (pick different ones, or invent your own):
-- an opinion about the project tech
-- something you noticed while using it
-- a reaction to the project's potential
-- a casual mention mid-thought
-- addressing the project directly
-- a short take or prediction
+Handle rules:
+- If handle provided: include it naturally somewhere in at least one tweet — exactly as given, no changes
+- If handle is "(not provided)": use the project name as plain text, never invent an @handle
 
-Reply format only, nothing else:
+What makes a tweet feel real vs bot:
+- Real: "TEE-attested execution is lowkey the most underrated security approach right now. been using @aeredium daily and it's starting to click"
+- Bot: "just crushed my daily tasks for @aeredium and got rewards, build momentum ser"
+- Real: "hardware-verified execution sounds boring until you realize what it actually means for trustless compute. @aeredium been living in my tabs lately"
+- Bot: "daily grind, daily rewards, moving forward with @aeredium #Web3"
+
+The difference: real tweets talk about the THING, not about the HABIT of doing the thing.
+
+Format (nothing else):
 TWEET1: [text]
 TWEET2: [text]`;
 
@@ -698,7 +699,7 @@ TWEET2: [text]`;
                     method: 'POST',
                     headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${apiKey}`},
                     body: JSON.stringify({
-                        model: 'llama-3.1-8b-instant',
+                        model: 'llama-3.3-70b-versatile',
                         messages: [{role:'system', content: system}, {role:'user', content: userMsg}],
                         max_tokens: 1024,
                         temperature: 0.9
