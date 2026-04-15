@@ -328,8 +328,14 @@
             </div>
         </div>
 
+        <!-- Search bar (daily/testnet) -->
+        <div id="searchWrap" class="mt-5 relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" id="gridSearch" placeholder="Cari project..." class="input-field pl-9" oninput="filterGrid(this.value)">
+        </div>
+
         <!-- Main Grid (daily/testnet) -->
-        <div id="mainGrid" class="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
+        <div id="mainGrid" class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3"></div>
 
         <!-- Yapping List -->
         <div id="yappingPage" class="hidden mt-5">
@@ -437,8 +443,13 @@
 
             const isTracker = tab !== 'yapping';
             document.getElementById('mainGrid').classList.toggle('hidden', !isTracker);
+            document.getElementById('searchWrap').classList.toggle('hidden', !isTracker);
             document.getElementById('emptyState').classList.add('hidden');
             document.getElementById('yappingPage').classList.toggle('hidden', isTracker);
+
+            // Reset search on tab switch
+            const gridSearch = document.getElementById('gridSearch');
+            if (gridSearch) gridSearch.value = '';
 
             if (isTracker) renderData();
             else renderYapping();
@@ -499,64 +510,145 @@
         window.deleteProject = async (id) => { if(confirm("Hapus project ini?")) await deleteDoc(doc(db,"airdrops",id)); };
 
         // ── Checklist ─────────────────────────────────────────
-        window.handleLinkClick = async (id, isChecked) => {
-            if (!isChecked) {
-                const today = new Date().toLocaleDateString('en-CA');
-                await updateDoc(doc(db,"airdrops",id), {isChecked:true, lastCheckedDate:today});
-            }
+        // Flat fields per link: openedWeb, openedDC, openedGalxe, openedDate
+        window.handleLinkClick = async (id, linkType) => {
+            const today = new Date().toLocaleDateString('en-CA');
+            const proj  = allData.find(p => p.id === id);
+            if (!proj) return;
+
+            const dateOk   = proj.openedDate === today;
+            const wasWeb   = dateOk && !!proj.openedWeb;
+            const wasDC    = dateOk && !!proj.openedDC;
+            const wasGalxe = dateOk && !!proj.openedGalxe;
+
+            const nowWeb   = wasWeb   || linkType === 'web';
+            const nowDC    = wasDC    || linkType === 'dc';
+            const nowGalxe = wasGalxe || linkType === 'galxe';
+
+            const hasWeb   = !!proj.link;
+            const hasDC    = !!proj.dc;
+            const hasGalxe = !!proj.galxe;
+            const allDone  = (!hasWeb || nowWeb) && (!hasDC || nowDC) && (!hasGalxe || nowGalxe);
+
+            await updateDoc(doc(db, 'airdrops', id), {
+                openedDate:  today,
+                openedWeb:   nowWeb,
+                openedDC:    nowDC,
+                openedGalxe: nowGalxe,
+                isChecked:       allDone,
+                lastCheckedDate: allDone ? today : (proj.lastCheckedDate || null)
+            });
         };
+
         window.toggleCheck = async (id, isChecked) => {
             const today = new Date().toLocaleDateString('en-CA');
-            await updateDoc(doc(db,"airdrops",id), {isChecked:!isChecked, lastCheckedDate:!isChecked?today:null});
+            await updateDoc(doc(db, 'airdrops', id), {
+                isChecked:       !isChecked,
+                lastCheckedDate: !isChecked ? today : null,
+                openedDate: null, openedWeb: false, openedDC: false, openedGalxe: false
+            });
         };
 
         // ── Render Daily/Testnet ───────────────────────────────
         const renderData = () => {
             const container = document.getElementById('mainGrid');
-            const today = new Date().toLocaleDateString('en-CA');
+            const today     = new Date().toLocaleDateString('en-CA');
+            const query     = (document.getElementById('gridSearch')?.value || '').toLowerCase();
             container.innerHTML = '';
 
             let filtered = allData.filter(p => p.type === currentTab);
+
+            // Compute display state per project
             let processed = filtered.map(p => {
-                let isChecked = p.isChecked || false;
-                if (isChecked && p.lastCheckedDate !== today) isChecked = false;
-                return {...p, displayChecked: isChecked};
+                const dateOk   = p.openedDate === today;
+                const openedWeb   = dateOk && !!p.openedWeb;
+                const openedDC    = dateOk && !!p.openedDC;
+                const openedGalxe = dateOk && !!p.openedGalxe;
+                const hasWeb   = !!p.link;
+                const hasDC    = !!p.dc;
+                const hasGalxe = !!p.galxe;
+                const hasLinks = hasWeb || hasDC || hasGalxe;
+
+                let displayChecked;
+                if (hasLinks) {
+                    displayChecked = (!hasWeb || openedWeb) && (!hasDC || openedDC) && (!hasGalxe || openedGalxe);
+                } else {
+                    displayChecked = !!(p.isChecked && p.lastCheckedDate === today);
+                }
+
+                return { ...p, displayChecked, openedWeb, openedDC, openedGalxe, hasWeb, hasDC, hasGalxe, hasLinks };
             });
+
             processed.sort((a,b) => {
-                if (a.displayChecked===b.displayChecked) return b.createdAt - a.createdAt;
+                if (a.displayChecked === b.displayChecked) return b.createdAt - a.createdAt;
                 return a.displayChecked ? 1 : -1;
             });
 
             const total = processed.length;
-            const done  = processed.filter(p=>p.displayChecked).length;
-            const left  = total - done;
-            const pct   = total>0 ? Math.round((done/total)*100) : 0;
+            const done  = processed.filter(p => p.displayChecked).length;
+            const pct   = total > 0 ? Math.round((done/total)*100) : 0;
 
             if (total > 0) {
                 document.getElementById('statsBar').classList.remove('hidden');
                 document.getElementById('progressWrap').classList.remove('hidden');
                 document.getElementById('statTotal').innerText = total;
                 document.getElementById('statDone').innerText  = done;
-                document.getElementById('statLeft').innerText  = left;
-                document.getElementById('progressFill').style.width = pct+'%';
-                document.getElementById('progressPct').innerText = pct+'%';
+                document.getElementById('statLeft').innerText  = total - done;
+                document.getElementById('progressFill').style.width = pct + '%';
+                document.getElementById('progressPct').innerText = pct + '%';
             } else {
                 document.getElementById('statsBar').classList.add('hidden');
                 document.getElementById('progressWrap').classList.add('hidden');
             }
-            document.getElementById('emptyState').classList.toggle('hidden', total>0);
+            document.getElementById('emptyState').classList.toggle('hidden', total > 0);
+
+            // Link button builder — shows opened state
+            const linkBtn = (href, type, label, opened, baseClass, svgPath) => {
+                const isDone = !!opened[type];
+                const doneClass = 'btn-link bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none';
+                const checkIcon = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                return `<a href="${href}" target="_blank" onclick="handleLinkClick('${href.slice(0,3)}__${type}__${label}', '${type}')"
+                    class="btn-link ${isDone ? doneClass : baseClass}">
+                    ${isDone ? checkIcon : svgPath}${label}
+                </a>`;
+            };
+
+            const discordSvg = '<svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>';
 
             processed.forEach(p => {
-                const isChecked = p.displayChecked;
+                // Apply search filter
+                if (query && !p.name.toLowerCase().includes(query)) return;
 
-                const webBtn = p.link ? `<a href="${p.link}" target="_blank" onclick="handleLinkClick('${p.id}',${isChecked})" class="btn-link bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white hover:border-sky-500"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>Web</a>` : '';
-                const dcBtn  = p.dc   ? `<a href="${p.dc}"   target="_blank" onclick="handleLinkClick('${p.id}',${isChecked})" class="btn-link bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500"><svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>DC</a>` : '';
-                const gxBtn  = p.galxe? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}',${isChecked})" class="btn-link bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white hover:border-purple-500"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>GX</a>` : '';
+                const isChecked = p.displayChecked;
+                const chk = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+                const doneClass = 'btn-link bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none';
+
+                const webBtn = p.link  ? `<a href="${p.link}"  target="_blank" onclick="handleLinkClick('${p.id}','web')"
+                    class="btn-link ${p.openedWeb  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white hover:border-sky-500'}">
+                    ${p.openedWeb  ? chk : '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>'}Web
+                </a>` : '';
+
+                const dcBtn  = p.dc    ? `<a href="${p.dc}"    target="_blank" onclick="handleLinkClick('${p.id}','dc')"
+                    class="btn-link ${p.openedDC   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500'}">
+                    ${p.openedDC   ? chk : discordSvg}DC
+                </a>` : '';
+
+                const gxBtn  = p.galxe ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}','galxe')"
+                    class="btn-link ${p.openedGalxe ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white hover:border-purple-500'}">
+                    ${p.openedGalxe ? chk : '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'}GX
+                </a>` : '';
+
+                const linkCount   = (p.hasWeb?1:0) + (p.hasDC?1:0) + (p.hasGalxe?1:0);
+                const openedCount = (p.openedWeb?1:0) + (p.openedDC?1:0) + (p.openedGalxe?1:0);
+                const progressDots = linkCount > 0 ? `
+                    <span class="text-[9px] font-medium ${openedCount===linkCount?'text-emerald-400':'text-slate-600'} ml-auto">
+                        ${openedCount}/${linkCount} link
+                    </span>` : '';
 
                 container.innerHTML += `
-                <div class="card ${isChecked?'done':''} p-4 group">
+                <div class="card ${isChecked?'done':''} p-4 group" data-name="${p.name.toLowerCase()}">
                     <div class="flex items-start justify-between mb-3 gap-2">
-                        <div class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0" onclick="toggleCheck('${p.id}',${isChecked})">
+                        <div class="flex items-center gap-2.5 ${!p.hasLinks?'cursor-pointer':''} flex-1 min-w-0" ${!p.hasLinks?`onclick="toggleCheck('${p.id}',${isChecked})"`:''}>
                             <div class="checkbox ${isChecked?'checked':''}">
                                 ${isChecked?'<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>':''}
                             </div>
@@ -573,12 +665,15 @@
                             </button>
                         </div>
                     </div>
-                    <div class="flex gap-1.5 ${isChecked?'opacity-30':''}">
-                        ${webBtn}${dcBtn}${gxBtn}
+                    <div class="flex gap-1.5 items-center ${isChecked&&!openedCount?'opacity-30':''}">
+                        ${webBtn}${dcBtn}${gxBtn}${progressDots}
                     </div>
                 </div>`;
             });
         };
+
+        // ── Filter Grid (daily/testnet) ───────────────────────
+        window.filterGrid = (q) => { renderData(); };
 
         // ── Filter Yapping ────────────────────────────────────
         window.filterYapping = (q) => {
