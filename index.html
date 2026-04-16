@@ -525,9 +525,9 @@
             const nowDC    = wasDC    || linkType === 'dc';
             const nowGalxe = wasGalxe || linkType === 'galxe';
 
-            const hasWeb   = !!proj.link;
-            const hasDC    = !!proj.dc;
-            const hasGalxe = !!proj.galxe;
+            const hasWeb   = !!(proj.link  && proj.link.trim());
+            const hasDC    = !!(proj.dc    && proj.dc.trim());
+            const hasGalxe = !!(proj.galxe && proj.galxe.trim());
             const allDone  = (!hasWeb || nowWeb) && (!hasDC || nowDC) && (!hasGalxe || nowGalxe);
 
             await updateDoc(doc(db, 'airdrops', id), {
@@ -564,9 +564,9 @@
                 const openedWeb   = dateOk && !!p.openedWeb;
                 const openedDC    = dateOk && !!p.openedDC;
                 const openedGalxe = dateOk && !!p.openedGalxe;
-                const hasWeb   = !!p.link;
-                const hasDC    = !!p.dc;
-                const hasGalxe = !!p.galxe;
+                const hasWeb   = !!(p.link  && p.link.trim());
+                const hasDC    = !!(p.dc    && p.dc.trim());
+                const hasGalxe = !!(p.galxe && p.galxe.trim());
                 const hasLinks = hasWeb || hasDC || hasGalxe;
 
                 let displayChecked;
@@ -623,17 +623,17 @@
                 const chk = '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
                 const doneClass = 'btn-link bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none';
 
-                const webBtn = p.link  ? `<a href="${p.link}"  target="_blank" onclick="handleLinkClick('${p.id}','web')"
+                const webBtn = (p.link && p.link.trim())  ? `<a href="${p.link}"  target="_blank" onclick="handleLinkClick('${p.id}','web')"
                     class="btn-link ${p.openedWeb  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none' : 'bg-sky-500/10 text-sky-400 border border-sky-500/20 hover:bg-sky-500 hover:text-white hover:border-sky-500'}">
                     ${p.openedWeb  ? chk : '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>'}Web
                 </a>` : '';
 
-                const dcBtn  = p.dc    ? `<a href="${p.dc}"    target="_blank" onclick="handleLinkClick('${p.id}','dc')"
+                const dcBtn  = (p.dc && p.dc.trim())    ? `<a href="${p.dc}"    target="_blank" onclick="handleLinkClick('${p.id}','dc')"
                     class="btn-link ${p.openedDC   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500 hover:text-white hover:border-indigo-500'}">
                     ${p.openedDC   ? chk : discordSvg}DC
                 </a>` : '';
 
-                const gxBtn  = p.galxe ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}','galxe')"
+                const gxBtn  = (p.galxe && p.galxe.trim()) ? `<a href="${p.galxe}" target="_blank" onclick="handleLinkClick('${p.id}','galxe')"
                     class="btn-link ${p.openedGalxe ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 pointer-events-none' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20 hover:bg-purple-500 hover:text-white hover:border-purple-500'}">
                     ${p.openedGalxe ? chk : '<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'}GX
                 </a>` : '';
